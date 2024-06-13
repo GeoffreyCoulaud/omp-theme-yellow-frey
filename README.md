@@ -5,15 +5,14 @@ A yellow theme for [Oh My Posh](https://ohmyposh.dev) based on [emodipt-extend](
 
 ## Zsh install
 
-1. Install a font that has been patched with [nerd font](https://www.nerdfonts.com/)
-2. Configure your terminal to use that font  
-3. Add the following line to your `.zshrc`
+1. Install Oh My Posh following the official instructions 
+2. Add the following line to your `.zshrc`, replacing the default Oh My Posh init
 
 ```sh
 eval "$(oh-my-posh init zsh --config https://github.com/GeoffreyCoulaud/omp-theme-yellow-frey/raw/main/yellow-frey.omp.json)"
 ```
 
-4. Close your shell and re-open it
+3. Close your shell and re-open it
 
 ## Helpful links
 
