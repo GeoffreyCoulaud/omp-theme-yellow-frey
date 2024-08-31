@@ -43,20 +43,6 @@
           }
         },
         {
-          "type": "shell",
-          "style": "plain",
-          "foreground": "#A0A0A0",
-          "properties": {
-            "mapped_shell_names": {
-              "pwsh": "Shell",
-              "powershell": "Shell",
-              "cmd": "Cmd",
-              "bash": "Bash"
-            }
-          },
-          "template": " \ue795 {{ .Name }}"
-        },
-        {
           "foreground": "#F3C267",
           "foreground_templates": [
             "{{ if or (.Working.Changed) (.Staging.Changed) }}#FF9248{{ end }}",
@@ -71,8 +57,14 @@
             "fetch_upstream_icon": true
           },
           "style": "plain",
-          "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046 {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }} ",
+          "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046 {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }}",
           "type": "git"
+        },
+        {
+          "type": "python",
+          "style": "plain",
+          "foreground": "#906cff",
+          "template": " \ue73c {{ .Full }} {{ .Venv }}"
         }
       ]
     },
