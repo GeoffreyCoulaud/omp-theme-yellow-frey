@@ -57,7 +57,7 @@
             "fetch_upstream_icon": true
           },
           "style": "plain",
-          "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044 {{ .Working.String }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046 {{ .Staging.String }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }}",
+          "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044{{ if gt .Working.Modified 0 }} <#FF9248>~{{ .Working.Modified }}</>{{ end }}{{ if gt .Working.Deleted 0 }} <#FF5555>-{{ .Working.Deleted }}</>{{ end }}{{ if gt .Working.Untracked 0 }} <#5EAEFF>?{{ .Working.Untracked }}</>{{ end }}{{ if gt .Working.Added 0 }} <#98C379>+{{ .Working.Added }}</>{{ end }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046{{ if gt .Staging.Modified 0 }} <#FF9248>~{{ .Staging.Modified }}</>{{ end }}{{ if gt .Staging.Deleted 0 }} <#FF5555>-{{ .Staging.Deleted }}</>{{ end }}{{ if gt .Staging.Added 0 }} <#98C379>+{{ .Staging.Added }}</>{{ end }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }}",
           "type": "git"
         },
         {
