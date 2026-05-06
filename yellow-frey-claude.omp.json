@@ -1,0 +1,138 @@
+{
+  "$schema": "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json",
+  "blocks": [
+    {
+      "alignment": "left",
+      "type": "prompt",
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "template": "\u256d\u2500"
+        },
+        {
+          "type": "claude",
+          "style": "diamond",
+          "foreground": "#000000",
+          "background": "#E77728",
+          "leading_diamond": "\ue0b6",
+          "trailing_diamond": "\ue0b4",
+          "template": "\udb82\udfc9 {{ .Model.DisplayName }}"
+        },
+        {
+          "type": "text",
+          "style": "plain",
+          "template": "\u2500"
+        },
+        {
+          "type": "text",
+          "style": "plain",
+          "template": " "
+        },
+        {
+          "type": "time",
+          "style": "diamond",
+          "foreground": "#000000",
+          "background": "#EDB230",
+          "leading_diamond": "\ue0b6",
+          "trailing_diamond": "\ue0b4",
+          "template": "\udb85\udc46 {{ .CurrentDate | date .Format }}",
+          "properties": {
+            "time_format": "2006-01-02 15:04:05"
+          }
+        },
+        {
+          "type": "git",
+          "style": "plain",
+          "foreground": "#F3C267",
+          "foreground_templates": [
+            "{{ if or (.Working.Changed) (.Staging.Changed) }}#FF9248{{ end }}",
+            "{{ if and (gt .Ahead 0) (gt .Behind 0) }}#ff4500{{ end }}",
+            "{{ if gt .Ahead 0 }}#B388FF{{ end }}",
+            "{{ if gt .Behind 0 }}#B388FF{{ end }}"
+          ],
+          "properties": {
+            "branch_max_length": 25,
+            "fetch_stash_count": true,
+            "fetch_status": true,
+            "fetch_upstream_icon": true
+          },
+          "template": " {{ .UpstreamIcon }}{{ .HEAD }}{{if .BranchStatus }} {{ .BranchStatus }}{{ end }}{{ if .Working.Changed }} \uf044{{ if gt .Working.Modified 0 }} <#FF9248>~{{ .Working.Modified }}</>{{ end }}{{ if gt .Working.Deleted 0 }} <#FF5555>-{{ .Working.Deleted }}</>{{ end }}{{ if gt .Working.Untracked 0 }} <#5EAEFF>?{{ .Working.Untracked }}</>{{ end }}{{ if gt .Working.Added 0 }} <#98C379>+{{ .Working.Added }}</>{{ end }}{{ end }}{{ if and (.Working.Changed) (.Staging.Changed) }} |{{ end }}{{ if .Staging.Changed }} \uf046{{ if gt .Staging.Modified 0 }} <#FF9248>~{{ .Staging.Modified }}</>{{ end }}{{ if gt .Staging.Deleted 0 }} <#FF5555>-{{ .Staging.Deleted }}</>{{ end }}{{ if gt .Staging.Added 0 }} <#98C379>+{{ .Staging.Added }}</>{{ end }}{{ end }}{{ if gt .StashCount 0 }} \ueb4b {{ .StashCount }}{{ end }}"
+        },
+        {
+          "type": "text",
+          "style": "plain",
+          "template": "{{ $stat := cmd \"sh\" \"-c\" \"git diff HEAD --shortstat 2>/dev/null; true\" }}{{ $ins := regexFind \"[0-9]+ insertion\" $stat | regexFind \"[0-9]+\" }}{{ $del := regexFind \"[0-9]+ deletion\" $stat | regexFind \"[0-9]+\" }}{{ if $ins }} <#98C379>+{{ $ins }}</>{{ end }}{{ if $del }} <#FF5555>-{{ $del }}</>{{ end }}"
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "type": "prompt",
+      "newline": true,
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "template": "\u2502 "
+        },
+        {
+          "type": "path",
+          "style": "diamond",
+          "foreground": "#FFDDA1",
+          "background": "transparent",
+          "leading_diamond": "\ue0b6",
+          "trailing_diamond": "\ue0b4",
+          "template": "\ue5ff {{ .Path }}",
+          "properties": {
+            "style": "full"
+          }
+        }
+      ]
+    },
+    {
+      "alignment": "left",
+      "type": "prompt",
+      "newline": true,
+      "segments": [
+        {
+          "type": "text",
+          "style": "plain",
+          "template": "\u2570\u2500 "
+        },
+        {
+          "type": "claude",
+          "style": "plain",
+          "foreground": "#FFDDA1",
+          "foreground_templates": [
+            "{{ if ge .TokenUsagePercent 80 }}#E06C75{{ end }}",
+            "{{ if ge .TokenUsagePercent 65 }}#E77728{{ end }}"
+          ],
+          "template": "{{ $f := int (div (mul .TokenUsagePercent 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .FormattedTokens }} / {{ .TokenUsagePercent.String }}%"
+        },
+        {
+          "type": "claude",
+          "style": "plain",
+          "foreground": "#FFDDA1",
+          "foreground_templates": [
+            "{{ if ge .FiveHourUsage 80 }}#E06C75{{ end }}",
+            "{{ if ge .FiveHourUsage 65 }}#E77728{{ end }}"
+          ],
+          "template": "{{ if .RateLimits }}{{ if .RateLimits.FiveHour.UsedPercentage }} \u00b7 \uf017 {{ $f := int (div (mul .FiveHourUsage 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .FiveHourUsage.String }}%{{ end }}{{ end }}"
+        },
+        {
+          "type": "claude",
+          "style": "plain",
+          "foreground": "#FFDDA1",
+          "foreground_templates": [
+            "{{ if ge .SevenDayUsage 80 }}#E06C75{{ end }}",
+            "{{ if ge .SevenDayUsage 65 }}#E77728{{ end }}"
+          ],
+          "template": "{{ if .RateLimits }}{{ if .RateLimits.SevenDay.UsedPercentage }} \u00b7 \uf073 {{ $f := int (div (mul .SevenDayUsage 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .SevenDayUsage.String }}%{{ end }}{{ end }}"
+        }
+      ]
+    }
+  ],
+  "final_space": false,
+  "version": 2
+}
