@@ -1,0 +1,186 @@
+#!/usr/bin/env bash
+#
+# omp-claude
+#
+# Single entry point for the oh-my-posh statusline in Claude Code.
+# Use it in place of calling `oh-my-posh claude` directly: every argument is
+# forwarded as-is, and the rendered statusline is identical for any provider.
+#
+# On top of rendering, it enriches the status JSON that Claude Code sends on
+# stdin for third-party providers that do not report usage the way the Anthropic
+# API does. For a recognised provider, the 5-hour and weekly usage is fetched
+# and injected into `rate_limits`, which lights up the native gauges of the
+# `claude` segment without any change to the theme. Anthropic (or any unknown
+# endpoint) is a full pass-through.
+#
+# The environment is read only in `main`; every other function is driven by its
+# arguments, and execution is linear from `main`.
+#
+# Adding a provider:
+#   1. Add a case to `detect_provider` returning a short id (e.g. `foo`).
+#   2. Implement `foo_fetch <dest> <host> <token>`: write the raw usage response
+#      to <dest>, return nonzero on any failure (bad auth, unusable body, ...).
+#   3. Implement `foo_rate_limits <raw>`: map that response to the normalised
+#      object `{five_hour, seven_day}` where each is
+#      `{used_percentage, resets_at}` (resets_at in epoch seconds) or null.
+#   Nothing else changes: caching, injection, rendering and `main` are generic.
+#
+# Install: drop this file into a directory on your PATH (see README), make it
+# executable, then in ~/.claude/settings.json:
+#   "statusLine": {
+#     "type": "command",
+#     "command": "omp-claude --config <theme-url-or-path>",
+#     "padding": 0
+#   }
+#
+# Optional environment variables:
+#   OMP_CLAUDE_USAGE_TTL   Usage cache duration in seconds (default: 60).
+
+set -o pipefail
+
+# ===========================================================================
+# Providers
+# ===========================================================================
+
+# Return the provider id for the given base URL, or empty for none.
+function detect_provider() {
+  case "$1" in
+    *z.ai* | *bigmodel.cn*) echo glm ;;
+    *) echo '' ;;
+  esac
+}
+
+# --- GLM Coding Plan (z.ai / bigmodel) -------------------------------------
+
+# Fetch the raw usage response into <dest>. Nonzero on failure or unusable body
+# (z.ai answers HTTP 200 even with a bad token, so the body must be validated).
+function glm_fetch() {
+  local dest="$1" host="$2" token="$3"
+  curl -fs --max-time 3 \
+    -H "Authorization: ${token}" \
+    -H 'Accept-Language: en-US,en' \
+    -H 'Content-Type: application/json' \
+    "https://${host}/api/monitor/usage/quota/limit" -o "$dest" \
+    && jq -e '.data.limits' "$dest" >/dev/null 2>&1
+}
+
+# Map the raw GLM response (<raw> file) to the normalised {five_hour, seven_day}.
+# GLM reports token windows in `data.limits[]`, keyed by unit (3 = hours for the
+# 5-hour window, 6 = weeks for the weekly one); nextResetTime is epoch ms.
+function glm_rate_limits() {
+  jq -c '
+    (.data.limits // []) as $l
+    | ([ $l[] | select(.type == "TOKENS_LIMIT" and .unit == 3) ][0]) as $five
+    | ([ $l[] | select(.type == "TOKENS_LIMIT" and .unit == 6) ][0]) as $week
+    | {
+        five_hour: (if $five then {used_percentage: $five.percentage, resets_at: (($five.nextResetTime // 0) / 1000 | floor)} else null end),
+        seven_day: (if $week then {used_percentage: $week.percentage, resets_at: (($week.nextResetTime // 0) / 1000 | floor)} else null end)
+      }' "$1"
+}
+
+# ===========================================================================
+# Generic core
+# ===========================================================================
+
+# Host part of a base URL, e.g. "https://api.z.ai/..." -> "api.z.ai".
+function endpoint_host() {
+  printf '%s' "$1" | sed -E 's#^https?://([^/]+).*#\1#'
+}
+
+# True when there is a known provider and everything needed to query it.
+function can_enrich() {
+  local provider="$1" token="$2"
+  [ -n "$provider" ] \
+    && [ -n "$token" ] \
+    && command -v curl >/dev/null 2>&1 \
+    && command -v jq >/dev/null 2>&1
+}
+
+# Path of the cache file for a given cache root, provider and host.
+function cache_file() {
+  local root="$1" provider="$2" host="$3"
+  printf '%s/oh-my-posh/usage-%s-%s.json' \
+    "$root" "$provider" "$(printf '%s' "$host" | tr -c 'A-Za-z0-9' '_')"
+}
+
+# Seconds since <cache> was last modified (a large number if missing).
+function cache_age() {
+  local cache="$1" mtime
+  [ -f "$cache" ] || { echo 999999; return; }
+  mtime="$(stat -c %Y "$cache" 2>/dev/null || stat -f %m "$cache" 2>/dev/null)"
+  echo $(( $(date +%s) - ${mtime:-0} ))
+}
+
+# Refresh <cache> via <provider>, atomically. Nonzero on failure and the
+# existing cache is left untouched.
+function fetch_into() {
+  local provider="$1" cache="$2" host="$3" token="$4" tmp
+  tmp="$(mktemp "${cache}.XXXXXX")" || return 1
+  if "${provider}_fetch" "$tmp" "$host" "$token"; then
+    mv -f "$tmp" "$cache"
+  else
+    rm -f "$tmp"
+    return 1
+  fi
+}
+
+# Keep the cache warm without ever blocking the prompt for long: serve a fresh
+# cache as-is, refresh a stale one in the background, and fetch synchronously
+# only on the very first (cold) run.
+function refresh_cache() {
+  local provider="$1" cache="$2" ttl="$3" host="$4" token="$5"
+  mkdir -p "$(dirname "$cache")" 2>/dev/null
+
+  [ "$(cache_age "$cache")" -lt "$ttl" ] && return
+
+  if [ -f "$cache" ]; then
+    { trap '' HUP; fetch_into "$provider" "$cache" "$host" "$token"; } >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+  else
+    fetch_into "$provider" "$cache" "$host" "$token" || true
+  fi
+}
+
+# Print <status_json> with <provider>'s usage merged into `rate_limits`.
+# Falls back to the original JSON if the cache or mapping is unusable.
+function inject_usage() {
+  local provider="$1" cache="$2" input="$3" limits merged
+  [ -f "$cache" ] || { printf '%s' "$input"; return; }
+
+  limits="$("${provider}_rate_limits" "$cache" 2>/dev/null)"
+  [ -n "$limits" ] || { printf '%s' "$input"; return; }
+
+  merged="$(printf '%s' "$input" | jq -c --argjson rl "$limits" '.rate_limits = $rl' 2>/dev/null)"
+  printf '%s' "${merged:-$input}"
+}
+
+# Render the statusline for <status_json>, forwarding the remaining args to
+# `oh-my-posh claude`.
+function render() {
+  local status_json="$1"; shift
+  printf '%s' "$status_json" | oh-my-posh claude "$@"
+}
+
+function main() {
+  local base_url="${ANTHROPIC_BASE_URL:-}"
+  local token="${ANTHROPIC_AUTH_TOKEN:-}"
+  local ttl="${OMP_CLAUDE_USAGE_TTL:-60}"
+  local cache_root="${XDG_CACHE_HOME:-$HOME/.cache}"
+  local omp_args=("$@")
+
+  local status_json provider
+  status_json="$(cat)"
+  provider="$(detect_provider "$base_url")"
+
+  if can_enrich "$provider" "$token"; then
+    local host cache
+    host="$(endpoint_host "$base_url")"
+    cache="$(cache_file "$cache_root" "$provider" "$host")"
+    refresh_cache "$provider" "$cache" "$ttl" "$host" "$token"
+    status_json="$(inject_usage "$provider" "$cache" "$status_json")"
+  fi
+
+  render "$status_json" "${omp_args[@]}"
+}
+
+main "$@"
