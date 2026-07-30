@@ -1,0 +1,142 @@
+$schema: https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/schema.json
+blocks:
+  - alignment: left
+    type: prompt
+    segments:
+      - type: text
+        style: plain
+        template: "╭─"
+      - type: claude
+        style: diamond
+        foreground: "#000000"
+        background: "#E77728"
+        leading_diamond: ""
+        trailing_diamond: ""
+        template: "󰯉 {{ .Model.DisplayName }}"
+      - type: text
+        style: plain
+        template: "─"
+      - type: text
+        style: plain
+        template: " "
+      - type: time
+        style: diamond
+        foreground: "#000000"
+        background: "#EDB230"
+        leading_diamond: ""
+        trailing_diamond: ""
+        template: "󱑆 {{ .CurrentDate | date .Format }}"
+        properties:
+          time_format: "2006-01-02 15:04:05"
+      - type: git
+        style: plain
+        foreground: "#F3C267"
+        foreground_templates:
+          - "{{ if or (.Working.Changed) (.Staging.Changed) }}#FF9248{{ end }}"
+          - "{{ if and (gt .Ahead 0) (gt .Behind 0) }}#ff4500{{ end }}"
+          - "{{ if gt .Ahead 0 }}#B388FF{{ end }}"
+          - "{{ if gt .Behind 0 }}#B388FF{{ end }}"
+        properties:
+          branch_max_length: 25
+          fetch_stash_count: true
+          fetch_status: true
+          fetch_upstream_icon: true
+        template: |-
+          {{- " " -}}{{ .UpstreamIcon }}{{ .HEAD }}{{ if .BranchStatus }} {{ .BranchStatus }}{{ end -}}
+          {{- if .Working.Changed }} {{ if gt .Working.Modified 0 }} <#FF9248>~{{ .Working.Modified }}</>{{ end -}}
+          {{- if gt .Working.Deleted 0 }} <#FF5555>-{{ .Working.Deleted }}</>{{ end -}}
+          {{- if gt .Working.Untracked 0 }} <#5EAEFF>?{{ .Working.Untracked }}</>{{ end -}}
+          {{- if gt .Working.Added 0 }} <#98C379>+{{ .Working.Added }}</>{{ end -}}
+          {{- end -}}
+          {{- if and (.Working.Changed) (.Staging.Changed) }} |{{ end -}}
+          {{- if .Staging.Changed }} {{ if gt .Staging.Modified 0 }} <#FF9248>~{{ .Staging.Modified }}</>{{ end -}}
+          {{- if gt .Staging.Deleted 0 }} <#FF5555>-{{ .Staging.Deleted }}</>{{ end -}}
+          {{- if gt .Staging.Added 0 }} <#98C379>+{{ .Staging.Added }}</>{{ end -}}
+          {{- end -}}
+          {{- if gt .StashCount 0 }}  {{ .StashCount }}{{ end -}}
+      - type: text
+        style: plain
+        template: |-
+          {{- $stat := cmd "sh" "-c" "git diff HEAD --shortstat 2>/dev/null; true" -}}
+          {{- $ins := regexFind "[0-9]+ insertion" $stat | regexFind "[0-9]+" -}}
+          {{- $del := regexFind "[0-9]+ deletion" $stat | regexFind "[0-9]+" -}}
+          {{- if $ins }} <#98C379>+{{ $ins }}</>{{ end -}}
+          {{- if $del }} <#FF5555>-{{ $del }}</>{{ end -}}
+  - alignment: left
+    type: prompt
+    newline: true
+    segments:
+      - type: text
+        style: plain
+        template: "│ "
+      - type: path
+        style: diamond
+        foreground: "#FFDDA1"
+        background: transparent
+        leading_diamond: ""
+        trailing_diamond: ""
+        template: " {{ .Path }}"
+        properties:
+          style: full
+  - alignment: left
+    type: prompt
+    newline: true
+    segments:
+      - type: text
+        style: plain
+        template: "╰─ "
+      - type: claude
+        style: plain
+        foreground: "#FFDDA1"
+        foreground_templates:
+          - "{{ if ge .TokenUsagePercent 80 }}#E06C75{{ end }}"
+          - "{{ if ge .TokenUsagePercent 65 }}#E77728{{ end }}"
+        template: |-
+          {{- $f := int (div (mul .TokenUsagePercent 15) 100) -}}
+          {{- repeat $f "▓" -}}{{- repeat (int (sub 15 $f)) "░" }} {{ .FormattedTokens }} / {{ .TokenUsagePercent.String }}%
+      - type: claude
+        style: plain
+        foreground: "#FFDDA1"
+        foreground_templates:
+          - "{{ if ge .FiveHourUsage 80 }}#E06C75{{ end }}"
+          - "{{ if ge .FiveHourUsage 65 }}#E77728{{ end }}"
+        template: |-
+          {{- if .RateLimits -}}
+          {{- if .RateLimits.FiveHour.UsedPercentage }} ·  {{ $f := int (div (mul .FiveHourUsage 15) 100) -}}
+          {{- repeat $f "▓" -}}{{- repeat (int (sub 15 $f)) "░" }} {{ .FiveHourUsage.String }}%
+          {{- $s := int .FiveHourResetsIn.Seconds -}}
+          {{- if gt $s 0 }} / {{ $tm := div $s 60 -}}
+          {{- $th := div $tm 60 -}}
+          {{- $j := div $th 24 -}}
+          {{- $hh := sub $th (mul $j 24) -}}
+          {{- $mm := sub $tm (mul $th 60) -}}
+          {{- if ge $j 1 -}}{{- $j }}j{{- if ge $hh 1 -}}{{- $hh }}h{{- end -}}
+          {{- else if ge $hh 1 -}}{{- $hh }}h{{- if ge $mm 1 -}}{{- $mm }}m{{- end -}}
+          {{- else -}}{{- $mm }}m{{- end -}}
+          {{- end -}}
+          {{- end -}}
+          {{- end -}}
+      - type: claude
+        style: plain
+        foreground: "#FFDDA1"
+        foreground_templates:
+          - "{{ if ge .SevenDayUsage 80 }}#E06C75{{ end }}"
+          - "{{ if ge .SevenDayUsage 65 }}#E77728{{ end }}"
+        template: |-
+          {{- if .RateLimits -}}
+          {{- if .RateLimits.SevenDay.UsedPercentage }} ·  {{ $f := int (div (mul .SevenDayUsage 15) 100) -}}
+          {{- repeat $f "▓" -}}{{- repeat (int (sub 15 $f)) "░" }} {{ .SevenDayUsage.String }}%
+          {{- $s := int .SevenDayResetsIn.Seconds -}}
+          {{- if gt $s 0 }} / {{ $tm := div $s 60 -}}
+          {{- $th := div $tm 60 -}}
+          {{- $j := div $th 24 -}}
+          {{- $hh := sub $th (mul $j 24) -}}
+          {{- $mm := sub $tm (mul $th 60) -}}
+          {{- if ge $j 1 -}}{{- $j }}j{{- if ge $hh 1 -}}{{- $hh }}h{{- end -}}
+          {{- else if ge $hh 1 -}}{{- $hh }}h{{- if ge $mm 1 -}}{{- $mm }}m{{- end -}}
+          {{- else -}}{{- $mm }}m{{- end -}}
+          {{- end -}}
+          {{- end -}}
+          {{- end -}}
+final_space: false
+version: 2

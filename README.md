@@ -40,7 +40,7 @@ Make sure `~/.local/bin` is on your `PATH` (adjust the directory to taste).
 {
   "statusLine": {
     "type": "command",
-    "command": "omp-claude --config https://github.com/GeoffreyCoulaud/omp-theme-yellow-frey/raw/main/yellow-frey-claude.omp.json",
+    "command": "omp-claude --config https://github.com/GeoffreyCoulaud/omp-theme-yellow-frey/raw/main/yellow-frey-claude.omp.yaml",
     "padding": 0
   }
 }
