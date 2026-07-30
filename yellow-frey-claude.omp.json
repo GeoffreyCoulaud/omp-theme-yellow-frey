@@ -118,7 +118,7 @@
             "{{ if ge .FiveHourUsage 80 }}#E06C75{{ end }}",
             "{{ if ge .FiveHourUsage 65 }}#E77728{{ end }}"
           ],
-          "template": "{{ if .RateLimits }}{{ if .RateLimits.FiveHour.UsedPercentage }} \u00b7 \uf017 {{ $f := int (div (mul .FiveHourUsage 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .FiveHourUsage.String }}%{{ end }}{{ end }}"
+          "template": "{{ if .RateLimits }}{{ if .RateLimits.FiveHour.UsedPercentage }} \u00b7 \uf017 {{ $f := int (div (mul .FiveHourUsage 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .FiveHourUsage.String }}%{{ $s := int .FiveHourResetsIn.Seconds }}{{ if gt $s 0 }} / {{ $tm := div $s 60 }}{{ $th := div $tm 60 }}{{ $j := div $th 24 }}{{ $hh := sub $th (mul $j 24) }}{{ $mm := sub $tm (mul $th 60) }}{{ if ge $j 1 }}{{ $j }}j{{ if ge $hh 1 }}{{ $hh }}h{{ end }}{{ else if ge $hh 1 }}{{ $hh }}h{{ if ge $mm 1 }}{{ $mm }}m{{ end }}{{ else }}{{ $mm }}m{{ end }}{{ end }}{{ end }}{{ end }}"
         },
         {
           "type": "claude",
@@ -128,7 +128,7 @@
             "{{ if ge .SevenDayUsage 80 }}#E06C75{{ end }}",
             "{{ if ge .SevenDayUsage 65 }}#E77728{{ end }}"
           ],
-          "template": "{{ if .RateLimits }}{{ if .RateLimits.SevenDay.UsedPercentage }} \u00b7 \uf073 {{ $f := int (div (mul .SevenDayUsage 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .SevenDayUsage.String }}%{{ end }}{{ end }}"
+          "template": "{{ if .RateLimits }}{{ if .RateLimits.SevenDay.UsedPercentage }} \u00b7 \uf073 {{ $f := int (div (mul .SevenDayUsage 15) 100) }}{{ repeat $f \"\u2593\" }}{{ repeat (int (sub 15 $f)) \"\u2591\" }} {{ .SevenDayUsage.String }}%{{ $s := int .SevenDayResetsIn.Seconds }}{{ if gt $s 0 }} / {{ $tm := div $s 60 }}{{ $th := div $tm 60 }}{{ $j := div $th 24 }}{{ $hh := sub $th (mul $j 24) }}{{ $mm := sub $tm (mul $th 60) }}{{ if ge $j 1 }}{{ $j }}j{{ if ge $hh 1 }}{{ $hh }}h{{ end }}{{ else if ge $hh 1 }}{{ $hh }}h{{ if ge $mm 1 }}{{ $mm }}m{{ end }}{{ else }}{{ $mm }}m{{ end }}{{ end }}{{ end }}{{ end }}"
         }
       ]
     }
