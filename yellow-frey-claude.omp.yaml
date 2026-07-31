@@ -16,9 +16,16 @@ blocks:
       - type: text
         style: plain
         template: "─"
-      - type: text
+      - type: claude
+        style: diamond
+        foreground: "#000000"
+        background: "#E77728"
+        leading_diamond: ""
+        trailing_diamond: ""
+        template: "{{ if .Effort }}{{ if .Effort.Level }} {{ .Effort.Level }}{{ end }}{{ end }}"
+      - type: claude
         style: plain
-        template: " "
+        template: "{{ if .Effort }}{{ if .Effort.Level }}─{{ end }}{{ end }}"
       - type: time
         style: diamond
         foreground: "#000000"
